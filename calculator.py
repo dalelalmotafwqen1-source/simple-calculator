@@ -1,53 +1,77 @@
-import tkinter as tk
-from tkinter import messagebox
+from kivy.app import App
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.button import Button
+from kivy.uix.textinput import TextInput
 
-def click(number):
-    current = entry.get()
-    entry.delete(0, tk.END)
-    entry.insert(0, str(current) + str(number))
+class CalculatorApp(App):
+    def build(self):
+        self.icon = ''
+        self.operators = ["/", "*", "+", "-"]
+        self.last_was_operator = None
+        self.last_button = None
 
-def clear():
-    entry.delete(0, tk.END)
+        main_layout = BoxLayout(orientation="vertical")
+        
+        self.solution = TextInput(
+            font_size=35, readonly=True, halign="right", multiline=False
+        )
+        main_layout.add_widget(self.solution)
 
-def calculate():
-    try:
-        result = eval(entry.get())
-        entry.delete(0, tk.END)
-        entry.insert(0, str(result))
-    except Exception:
-        messagebox.showerror("خطأ", "عملية غير صالحة")
+        buttons = [
+            ["7", "8", "9", "/"],
+            ["4", "5", "6", "*"],
+            ["1", "2", "3", "-"],
+            [".", "0", "C", "+"],
+        ]
 
-root = tk.Tk()
-root.title("آلة حاسبة بسيطة")
-root.geometry("300x400")
-root.resizable(False, False)
+        for row in buttons:
+            h_layout = BoxLayout()
+            for label in row:
+                button = Button(
+                    text=label,
+                    font_size=30,
+                    background_color=(0.5, 0.5, 0.5, 1),
+                )
+                button.bind(on_press=self.on_button_press)
+                h_layout.add_widget(button)
+            main_layout.add_widget(h_layout)
 
-entry = tk.Entry(root, font=("Arial", 20), justify="right")
-entry.pack(fill=tk.X, padx=10, pady=10, ipady=10)
+        equals_button = Button(
+            text="=", font_size=30, background_color=(0.1, 0.6, 0.1, 1)
+        )
+        equals_button.bind(on_press=self.on_solution)
+        main_layout.add_widget(equals_button)
 
-buttons = [
-    ('7', 1, 0), ('8', 1, 1), ('9', 1, 2), ('/', 1, 3),
-    ('4', 2, 0), ('5', 2, 1), ('6', 2, 2), ('*', 2, 3),
-    ('1', 3, 0), ('2', 3, 1), ('3', 3, 2), ('-', 3, 3),
-    ('0', 4, 0), ('.', 4, 1), ('+', 4, 2), ('=', 4, 3)
-]
+        return main_layout
 
-frame = tk.Frame(root)
-frame.pack(expand=True, fill="both", padx=10, pady=10)
+    def on_button_press(self, instance):
+        current = self.solution.text
+        button_text = instance.text
 
-for (text, row, col) in buttons:
-    if text == '=':
-        btn = tk.Button(frame, text=text, font=("Arial", 16), bg="green", fg="white", command=calculate)
-    else:
-        btn = tk.Button(frame, text=text, font=("Arial", 16), command=lambda t=text: click(t))
-    btn.grid(row=row, column=col, sticky="nsew", ipadx=10, ipady=10)
+        if button_text == "C":
+            self.solution.text = ""
+        else:
+            if current and (
+                self.last_was_operator and button_text in self.operators
+            ):
+                return
+            elif current == "" and button_text in self.operators:
+                return
+            else:
+                new_text = current + button_text
+                self.solution.text = new_text
 
-clear_btn = tk.Button(root, text="مسح (C)", font=("Arial", 14), bg="red", fg="white", command=clear)
-clear_btn.pack(fill=tk.X, padx=10, pady=5)
+        self.last_was_operator = button_text in self.operators
+        self.last_button = button_text
 
-for i in range(5):
-    frame.rowconfigure(i, weight=1)
-for i in range(4):
-    frame.columnconfigure(i, weight=1)
+    def on_solution(self, instance):
+        text = self.solution.text
+        if text:
+            try:
+                solution = str(eval(self.solution.text))
+                self.solution.text = solution
+            except Exception:
+                self.solution.text = "خطأ"
 
-root.mainloop()
+if __name__ == "__main__":
+    CalculatorApp().run()
